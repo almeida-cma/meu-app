@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu App Demo</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: Arial; padding: 20px; max-width: 500px; margin: 0 auto; background: #f5f5f5; }
+        .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        button { padding: 12px; border: none; border-radius: 8px; background: #1a237e; color: white; font-size: 1rem; cursor: pointer; width: 100%; margin-bottom: 8px; }
+        .dado { background: #f5f5f5; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; min-height: 60px; }
+        .tab-bar { display: flex; gap: 4px; background: white; border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+        .tab-bar button { flex: 1; padding: 10px; border: none; border-radius: 8px; background: transparent; font-size: 0.9rem; cursor: pointer; }
+        .tab-bar button.ativo { background: #1a237e; color: white; }
+        .tab { display: none; }
+        .tab.ativo { display: block; }
+        img { width: 100%; border-radius: 8px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+
+    <h1 style="color:#1a237e;">📱 App Demo</h1>
+
+    <!-- BARRA DE NAVEGAÇÃO -->
+    <div class="tab-bar">
+        <button class="ativo" onclick="abrirTab('home')">🏠</button>
+        <button onclick="abrirTab('camera')">📷</button>
+        <button onclick="abrirTab('gps')">📍</button>
+        <button onclick="abrirTab('sensores')">📱</button>
+    </div>
+
+    <!-- ABA: HOME (Portos) -->
+    <div id="tab-home" class="tab ativo">
+        <div class="card">
+            <h2>⚓ Portos</h2>
+            <div id="lista"></div>
+        </div>
+    </div>
+
+    <!-- ABA: CÂMERA -->
+    <div id="tab-camera" class="tab">
+        <div class="card">
+            <h2>📷 Câmera</h2>
+            <button onclick="tirarFoto()">📸 Tirar Foto</button>
+            <img id="foto" style="display:none;" />
+        </div>
+    </div>
+
+    <!-- ABA: GPS -->
+    <div id="tab-gps" class="tab">
+        <div class="card">
+            <h2>📍 Localização</h2>
+            <button onclick="buscarGPS()">📍 Buscar</button>
+            <div id="gps" class="dado">Clique em Buscar</div>
+        </div>
+    </div>
+
+    <!-- ABA: SENSORES -->
+    <div id="tab-sensores" class="tab">
+        <div class="card">
+            <h2>📱 Sensores</h2>
+            <button onclick="iniciarSensores()" style="background:#4CAF50;">▶ Iniciar</button>
+            <button onclick="pararSensores()" style="background:#f44336;">⏹ Parar</button>
+            <div id="sensores" class="dado">Clique em Iniciar</div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // NAVEGAÇÃO
+        // ============================================================
+        function abrirTab(id) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('ativo'));
+            document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('ativo'));
+            document.getElementById('tab-' + id).classList.add('ativo');
+            event.target.classList.add('ativo');
+        }
+
+        // ============================================================
+        // 1. PORTOS (JSON)
+        // ============================================================
+        const portos = [
+            { nome: 'Porto de Santos', local: 'Santos, SP' },
+            { nome: 'Porto do Rio', local: 'Rio de Janeiro, RJ' },
+            { nome: 'Porto de Paranaguá', local: 'Paranaguá, PR' }
+        ];
+
+        document.getElementById('lista').innerHTML = portos.map(p =>
+            '<div style="padding:8px;border-bottom:1px solid #eee;"><b>' + p.nome + '</b><br>📍 ' + p.local + '</div>'
+        ).join('');
+
+        // ============================================================
+        // 2. CÂMERA (WebRTC)
+        // ============================================================
+        async function tirarFoto() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 640;
+                canvas.height = 480;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+
+                document.getElementById('foto').src = canvas.toDataURL('image/jpeg');
+                document.getElementById('foto').style.display = 'block';
+
+                stream.getTracks().forEach(t => t.stop());
+            } catch (e) {
+                alert('Erro ao acessar câmera: ' + e.message);
+            }
+        }
+
+        // ============================================================
+        // 3. GPS (Geolocation API)
+        // ============================================================
+        function buscarGPS() {
+            if (!navigator.geolocation) {
+                document.getElementById('gps').textContent = '❌ GPS não suportado';
+                return;
+            }
+
+            document.getElementById('gps').textContent = '⏳ Buscando...';
+
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    document.getElementById('gps').textContent =
+                        '📍 ' + pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) +
+                        '\nPrecisão: ' + pos.coords.accuracy + 'm';
+                },
+                err => {
+                    document.getElementById('gps').textContent = '❌ ' + err.message;
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        // ============================================================
+        // 4. SENSORES (Acelerômetro + Giroscópio)
+        // ============================================================
+        let sensoresAtivos = false;
+
+        function handleMotion(e) {
+            if (!sensoresAtivos) return;
+
+            const a = e.acceleration || {};
+            const r = e.rotationRate || {};
+
+            document.getElementById('sensores').textContent =
+                '📊 Acelerômetro:\n' +
+                'X: ' + (a.x || 0).toFixed(2) + '  Y: ' + (a.y || 0).toFixed(2) + '  Z: ' + (a.z || 0).toFixed(2) +
+                '\n\n🔄 Giroscópio:\n' +
+                'α: ' + (r.alpha || 0).toFixed(2) + '  β: ' + (r.beta || 0).toFixed(2) + '  γ: ' + (r.gamma || 0).toFixed(2);
+        }
+
+        function iniciarSensores() {
+            if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(result => {
+                    if (result === 'granted') {
+                        sensoresAtivos = true;
+                        window.addEventListener('devicemotion', handleMotion);
+                        document.getElementById('sensores').textContent = '⏳ Aguardando dados...';
+                    } else {
+                        document.getElementById('sensores').textContent = '❌ Permissão negada';
+                    }
+                });
+            } else {
+                sensoresAtivos = true;
+                window.addEventListener('devicemotion', handleMotion);
+                document.getElementById('sensores').textContent = '⏳ Aguardando dados...';
+            }
+        }
+
+        function pararSensores() {
+            sensoresAtivos = false;
+            window.removeEventListener('devicemotion', handleMotion);
+            document.getElementById('sensores').textContent = '⏹ Parado';
+        }
+    </script>
+
+</body>
+</html>
