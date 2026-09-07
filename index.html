@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu App Demo</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="theme-color" content="#1a237e">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: Arial; padding: 20px; max-width: 500px; margin: 0 auto; background: #f5f5f5; }
@@ -17,6 +20,7 @@
         .tab { display: none; }
         .tab.ativo { display: block; }
         img { width: 100%; border-radius: 8px; margin-top: 12px; }
+        .icone-teste { width: 64px; height: 64px; border-radius: 50%; }
     </style>
 </head>
 <body>
@@ -31,7 +35,7 @@
         <button onclick="abrirTab('sensores')">📱</button>
     </div>
 
-    <!-- ABA: HOME (Portos) -->
+    <!-- ABA: HOME -->
     <div id="tab-home" class="tab ativo">
         <div class="card">
             <h2>⚓ Portos</h2>
@@ -79,7 +83,7 @@
         }
 
         // ============================================================
-        // 1. PORTOS (JSON)
+        // PORTOS (JSON)
         // ============================================================
         const portos = [
             { nome: 'Porto de Santos', local: 'Santos, SP' },
@@ -92,7 +96,7 @@
         ).join('');
 
         // ============================================================
-        // 2. CÂMERA (WebRTC)
+        // CÂMERA
         // ============================================================
         async function tirarFoto() {
             try {
@@ -116,7 +120,7 @@
         }
 
         // ============================================================
-        // 3. GPS (Geolocation API)
+        // GPS
         // ============================================================
         function buscarGPS() {
             if (!navigator.geolocation) {
@@ -140,7 +144,7 @@
         }
 
         // ============================================================
-        // 4. SENSORES (Acelerômetro + Giroscópio)
+        // SENSORES
         // ============================================================
         let sensoresAtivos = false;
 
@@ -179,6 +183,15 @@
             sensoresAtivos = false;
             window.removeEventListener('devicemotion', handleMotion);
             document.getElementById('sensores').textContent = '⏹ Parado';
+        }
+
+        // ============================================================
+        // REGISTRAR SERVICE WORKER
+        // ============================================================
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('✅ Service Worker registrado'))
+                .catch(err => console.log('❌ Service Worker: ', err));
         }
     </script>
 
