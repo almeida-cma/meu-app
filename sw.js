@@ -1,14 +1,19 @@
-// Service Worker - Cache de arquivos para funcionamento offline
+// ============================================================
+// SERVICE WORKER - App Demo
+// ============================================================
+
 const CACHE_NAME = 'app-demo-v1';
 const urlsToCache = [
     '/',
     '/index.html',
     '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icon-192.png',
+    '/icon-512.png'
 ];
 
-// Instala o Service Worker e faz o cache
+// ============================================================
+// INSTALAÇÃO
+// ============================================================
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -19,7 +24,9 @@ self.addEventListener('install', event => {
     );
 });
 
-// Ativa e limpa caches antigos
+// ============================================================
+// ATIVAÇÃO
+// ============================================================
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -35,7 +42,9 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Intercepta requisições e serve do cache
+// ============================================================
+// INTERCEPTAÇÃO DE REQUISIÇÕES
+// ============================================================
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
